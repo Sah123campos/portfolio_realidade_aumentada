@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cartão AR 3D - Samuel Santana</title>
+    
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            touch-action: none;
+        }
+        #loading {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: #000; z-index: 1000;
+            transition: opacity 0.8s ease;
+        }
+        #loading.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 44px; height: 44px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #007AFF;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading p { color: rgba(255, 255, 255, 0.6); margin-top: 16px; font-size: 14px; }
+        #loading .error { color: #FF6B6B; font-size: 12px; margin-top: 8px; display: none; text-align: center; padding: 0 20px; }
+        #hint {
+            position: fixed; bottom: 40px; left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 18px; border-radius: 20px;
+            backdrop-filter: blur(8px);
+            z-index: 100; pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+        #hint.hidden { opacity: 0; }
+        a-scene { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+        #status {
+            position: fixed; top: 20px; left: 50%;
+            transform: translateX(-50%);
+            color: #fff; background: rgba(0,0,0,0.7);
+            padding: 6px 16px; border-radius: 12px;
+            font-size: 12px; z-index: 200;
+            backdrop-filter: blur(4px); display: none;
+        }
+        #btn-falar {
+            position: fixed; bottom: 90px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 122, 255, 0.85);
+            color: #fff; border: none;
+            padding: 10px 24px; border-radius: 25px;
+            font-size: 14px; font-weight: 600;
+            z-index: 150; backdrop-filter: blur(8px);
+            cursor: pointer; display: none;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+        #btn-falar:hover { background: rgba(0, 122, 255, 1); transform: translateX(-50%) scale(1.05); }
+        #contatos {
+            position: fixed; bottom: 140px; left: 50%;
+            transform: translateX(-50%);
+            display: none; gap: 10px; z-index: 150;
+        }
+        #contatos a {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff; text-decoration: none;
+            padding: 8px 14px; border-radius: 20px;
+            font-size: 13px; font-weight: 500;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.2s ease;
+        }
+        #contatos a:hover { background: rgba(0, 122, 255, 0.9); transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>Inicializando câmera</p>
+        <p class="error" id="error-msg">Erro ao iniciar a câmera.</p>
+    </div>
+
+    <div id="status">🔍 Procure o marcador</div>
+    
+    <div id="contatos">
+        <a href="https://github.com/Sah123campos" target="_blank" rel="noopener">💻 GitHub</a>
+        <a href="https://www.linkedin.com/in/samuel-santana-7623402b8/" target="_blank" rel="noopener">💼 LinkedIn</a>
+        <a href="https://www.instagram.com/_samusantana_/" target="_blank" rel="noopener">📸 Instagram</a>
+    </div>
+
+    <button id="btn-falar">🔊 Ouvir apresentação</button>
+    <div id="hint">Arraste para girar</div>
+
+    <a-scene 
+        id="scene"
+        mindar-image="imageTargetSrc: targets.mind; autoStart: true;" 
+        vr-mode-ui="enabled: false" 
+        device-orientation-permission-ui="enabled: false"
+        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true;">
+        
+        <!-- Luzes -->
+        <a-entity light="type: ambient; intensity: 0.9;"></a-entity>
+        <a-entity light="type: directional; intensity: 1.2; position: 1 2 1;"></a-entity>
+        <a-entity light="type: directional; intensity: 0.6; position: -1 1 -1;"></a-entity>
+        
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        
+        <a-entity mindar-image-target="targetIndex: 0" fala-boas-vindas>
+            <a-entity id="card-3d" position="0 0.3 0">
+                
+                <!-- ===== CORPO DO CARTÃO 3D (placa escura com espessura) ===== -->
+                <a-box 
+                    position="0 0 0"
+                    width="1.8" 
+                    height="1.1" 
+                    depth="0.08"
+                    color="#0a0a1a">
+                </a-box>
+
+                <!-- ===== BORDA AZUL (efeito neon) ===== -->
+                <a-box 
+                    position="0 0 0"
+                    width="1.82" 
+                    height="1.12" 
+                    depth="0.06"
+                    color="#007AFF"
+                    opacity="0.35">
+                </a-box>
+
+                <!-- ===== IMAGEM DO CARTÃO COLADA NA FRENTE ===== -->
+                <a-image 
+                    src="marcador.jpeg"
+                    position="0 0 0.045"
+                    width="1.78" 
+                    height="1.08">
+                </a-image>
+
+                <!-- ===== TEXTO: NOME ===== -->
+                <a-text 
+                    value="SAMUEL SANTANA"
+                    color="#007AFF"
+                    align="center"
+                    width="3"
+                    position="0 0.28 0.12"
+                    scale="0.5 0.5 0.5">
+                </a-text>
+
+                <!-- ===== TEXTO: PROFISSÃO ===== -->
+                <a-text 
+                    value="Desenvolvedor Full-Stack"
+                    color="#FFFFFF"
+                    align="center"
+                    width="3"
+                    position="0 0.13 0.12"
+                    scale="0.32 0.32 0.32">
+                </a-text>
+
+                <!-- ===== TEXTO: EMPRESA ===== -->
+                <a-text 
+                    value="UFSCar · DeOTIC"
+                    color="#FFD700"
+                    align="center"
+                    width="3"
+                    position="0 0.0 0.12"
+                    scale="0.28 0.28 0.28">
+                </a-text>
+
+                <!-- ===== TEXTO: ESPECIALIZAÇÃO ===== -->
+                <a-text 
+                    value="Back-end com Java + Spring Boot"
+                    color="#7FD8FF"
+                    align="center"
+                    width="3"
+                    position="0 -0.13 0.12"
+                    scale="0.22 0.22 0.22">
+                </a-text>
+
+                <!-- ===== TEXTO: TECNOLOGIAS ===== -->
+                <a-text 
+                    value="Web · Mobile · APIs · Cloud"
+                    color="#A0A0A0"
+                    align="center"
+                    width="3"
+                    position="0 -0.25 0.12"
+                    scale="0.2 0.2 0.2">
+                </a-text>
+
+            </a-entity>
+        </a-entity>
+        
+    </a-scene>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            //  ⚙️  CONFIGURAÇÃO — SAMUEL SANTANA
+            // ============================================================
+            const CONFIG = {
+                textoFalado: "Olá! Eu sou Samuel Santana, desenvolvedor Full-Stack na UFSCar, atuando no departamento DeOTIC. Sou especializando em back-end com Java e Spring Boot. Trabalho com desenvolvimento web, mobile, APIs e cloud. Prazer em conhecê-lo!",
+                idioma: "pt-BR",
+                velocidade: 1.0,
+                tom: 1.0,
+                volume: 1.0
+            };
+            // ============================================================
+
+            const loading = document.getElementById('loading');
+            const errorMsg = document.getElementById('error-msg');
+            const hint = document.getElementById('hint');
+            const status = document.getElementById('status');
+            const btnFalar = document.getElementById('btn-falar');
+            const contatos = document.getElementById('contatos');
+            const scene = document.getElementById('scene');
+
+            if (window.location.protocol === 'file:') {
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = 'Abra por HTTPS ou localhost para liberar a câmera.';
+            }
+
+            // ===== FALA =====
+            function falar(texto) {
+                if (!('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel();
+                const fala = new SpeechSynthesisUtterance(texto);
+                fala.lang = CONFIG.idioma;
+                fala.rate = CONFIG.velocidade;
+                fala.pitch = CONFIG.tom;
+                fala.volume = CONFIG.volume;
+                const vozes = window.speechSynthesis.getVoices();
+                const vozBR = vozes.find(v => v.lang === 'pt-BR' || v.lang === 'pt_BR');
+                if (vozBR) fala.voice = vozBR;
+                window.speechSynthesis.speak(fala);
+            }
+
+            // ===== COMPONENTE A-FRAME =====
+            AFRAME.registerComponent('fala-boas-vindas', {
+                init: function () {
+                    this.el.addEventListener('targetFound', () => {
+                        falar(CONFIG.textoFalado);
+                        btnFalar.style.display = 'block';
+                        contatos.style.display = 'flex';
+                    });
+                    this.el.addEventListener('targetLost', () => {
+                        window.speechSynthesis.cancel();
+                        btnFalar.style.display = 'none';
+                        contatos.style.display = 'none';
+                    });
+                }
+            });
+
+            btnFalar.addEventListener('click', () => falar(CONFIG.textoFalado));
+
+            // ===== EVENTOS DA CENA =====
+            scene.addEventListener('arReady', function() {
+                status.style.display = 'block';
+                loading.classList.add('hidden');
+            });
+            scene.addEventListener('targetFound', function() {
+                status.textContent = '✅ Marcador detectado!';
+                setTimeout(() => { status.style.display = 'none'; }, 3000);
+            });
+            scene.addEventListener('arError', function() {
+                errorMsg.style.display = 'block';
+            });
+
+            setTimeout(() => { hint.classList.add('hidden'); }, 6000);
+
+            // ===== CONTROLE DE ROTAÇÃO DO CARTÃO 3D =====
+            const card = document.getElementById('card-3d');
+            
+            let rotY = 0, rotX = 0;
+            let isDragging = false, lastX = 0, lastY = 0;
+
+            document.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    lastX = e.touches[0].clientX;
+                    lastY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 1 && isDragging) {
+                    const touch = e.touches[0];
+                    const deltaX = touch.clientX - lastX;
+                    const deltaY = touch.clientY - lastY;
+                    rotY += deltaX * 0.5;
+                    rotX += deltaY * 0.3;
+                    rotX = Math.max(-70, Math.min(70, rotX));
+                    card.setAttribute('rotation', rotX + ' ' + rotY + ' 0');
+                    lastX = touch.clientX;
+                    lastY = touch.clientY;
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', function() { isDragging = false; }, { passive: true });
+
+            // Mouse (para testar no PC)
+            let isMouseDown = false;
+            document.addEventListener('mousedown', function(e) {
+                isMouseDown = true;
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+            document.addEventListener('mousemove', function(e) {
+                if (!isMouseDown) return;
+                const deltaX = e.clientX - lastX;
+                const deltaY = e.clientY - lastY;
+                rotY += deltaX * 0.5;
+                rotX += deltaY * 0.3;
+                rotX = Math.max(-70, Math.min(70, rotX));
+                card.setAttribute('rotation', rotX + ' ' + rotY + ' 0');
+                lastX = e.clientX;
+                lastY = e.clientY;
+            });
+            document.addEventListener('mouseup', function() { isMouseDown = false; });
+
+            console.log('🚀 Cartão 3D do Samuel carregado');
+        })();
+    </script>
+</body>
+</html>
