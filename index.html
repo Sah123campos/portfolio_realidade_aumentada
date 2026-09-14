@@ -84,6 +84,23 @@
             transition: all 0.2s ease;
         }
         #contatos a:hover { background: rgba(0, 122, 255, 0.9); transform: translateY(-2px); }
+        @media (max-width: 600px) {
+            #contatos {
+                width: calc(100% - 24px);
+                justify-content: center;
+                flex-wrap: wrap;
+                bottom: 132px;
+            }
+            #contatos a {
+                padding: 7px 10px;
+                font-size: 11px;
+            }
+            #btn-falar {
+                bottom: 82px;
+                padding: 9px 18px;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -120,7 +137,7 @@
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         
         <a-entity mindar-image-target="targetIndex: 0" fala-boas-vindas>
-            <a-entity id="card-3d" position="0 0.3 0">
+            <a-entity id="card-3d" position="0 0.3 0" scale="0.7 0.7 0.7">
                 
                 <!-- ===== CORPO DO CARTÃO 3D (placa escura com espessura) ===== -->
                 <a-box 
