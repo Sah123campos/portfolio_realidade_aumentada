@@ -303,10 +303,12 @@
             
             let rotY = 0, rotX = 0;
             let isDragging = false, lastX = 0, lastY = 0;
+            let movedCard = false;
 
             document.addEventListener('touchstart', function(e) {
                 if (e.touches.length === 1) {
                     isDragging = true;
+                    movedCard = false;
                     lastX = e.touches[0].clientX;
                     lastY = e.touches[0].clientY;
                 }
@@ -317,6 +319,7 @@
                     const touch = e.touches[0];
                     const deltaX = touch.clientX - lastX;
                     const deltaY = touch.clientY - lastY;
+                    if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) movedCard = true;
                     rotY += deltaX * 0.5;
                     rotX += deltaY * 0.3;
                     rotX = Math.max(-70, Math.min(70, rotX));
@@ -332,6 +335,7 @@
             let isMouseDown = false;
             document.addEventListener('mousedown', function(e) {
                 isMouseDown = true;
+                movedCard = false;
                 lastX = e.clientX;
                 lastY = e.clientY;
             });
@@ -339,6 +343,7 @@
                 if (!isMouseDown) return;
                 const deltaX = e.clientX - lastX;
                 const deltaY = e.clientY - lastY;
+                if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) movedCard = true;
                 rotY += deltaX * 0.5;
                 rotX += deltaY * 0.3;
                 rotX = Math.max(-70, Math.min(70, rotX));
@@ -347,6 +352,17 @@
                 lastY = e.clientY;
             });
             document.addEventListener('mouseup', function() { isMouseDown = false; });
+
+            document.addEventListener('click', function(e) {
+                if (movedCard || (e.target instanceof Element && e.target.closest('a, button'))) {
+                    movedCard = false;
+                    return;
+                }
+
+                const x = Math.max(-0.9, Math.min(0.9, (e.clientX / window.innerWidth - 0.5) * 1.8));
+                const y = Math.max(-0.5, Math.min(0.9, (0.5 - e.clientY / window.innerHeight) * 1.2 + 0.3));
+                card.setAttribute('position', `${x} ${y} 0`);
+            });
 
             console.log('🚀 Cartão 3D do Samuel carregado');
         })();
